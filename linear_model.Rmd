@@ -95,3 +95,40 @@ fit|>
   broom:: tidy()
 ```
 
+## Quick look at diagnostics 
+
+```{r}
+nyc_airbnb|>
+  modelr::add_residuals(fit) |> 
+  ggplot(aes(x = resid)) +
+  geom_density() +
+  xlim(-100,500)
+```
+
+```{r}
+nyc_airbnb|>
+  modelr::add_residuals(fit) |> 
+  ggplot(aes(x = borough, y = resid)) +
+  geom_violin()
+```
+
+```{r}
+nyc_airbnb|>
+  modelr::add_residuals(fit) |> 
+  ggplot(aes(x = stars, y = resid)) +
+  geom_point()
+```
+
+
+## hypothesis test for categorical predictor 
+
+fit a "null and "alternative model"
+
+```{r}
+fit_null = lm(price ~ stars + borough, data = nyc_airbnb)
+fit_alternative = lm(price ~ stars + borough + room_type, data = nyc_airbnb)
+
+anova(fit_null, fit_alternative) |>
+  broom::tidy()
+```
+
