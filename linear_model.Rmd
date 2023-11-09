@@ -132,3 +132,61 @@ anova(fit_null, fit_alternative) |>
   broom::tidy()
 ```
 
+## borough-level differences
+
+```{r}
+fit = 
+  nyc_airbnb |>
+  lm(price ~ stars * borough + room_type * borough, data = _)
+
+fit |>
+  broom::tidy()
+```
+
+# goal is to fit 4 difference seperate linear model one for each borough and look at star effect
+
+```{r}
+airbnb_lm = function(df) {
+  lm(price ~ stars + room_type, data = df)
+  
+}
+
+nyc_airbnb |>
+  nest(df = -borough) |>
+  mutate(
+    models = map(df, airbnb_lm),
+    results = map (models, broom :: tidy)
+  ) |>
+  select(borough, results)|>
+  unnest(results)|>
+  select(borough, term, estimate) |>
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  )|>
+  knitr::kable(digits=2)
+```
+
+same things but just a little difference 
+
+```{r}
+nyc_airbnb |>
+  nest(df = -borough) |>
+  mutate(
+    models = map(df, \(df) lm(price ~ stars + room_type, data = df)),
+    results = map (models, broom :: tidy)
+  ) |>
+  select(borough, results)|>
+  unnest(results)|>
+  select(borough, term, estimate) |>
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  )|>
+  knitr::kable(digits=2)
+```
+
+
+
+
+
