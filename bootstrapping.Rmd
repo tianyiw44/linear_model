@@ -86,7 +86,7 @@ sim_df_nonconst |>
 start with a lil function 
 
 ```{r}
-boot_samp = function (df) {
+boot_sample = function (df) {
 
   # use sample_frac(), draw a size from the dataframe of the exact size of the dataframe
   # Key step is replace = true,
@@ -99,13 +99,80 @@ Let's see how this work
 
 ```{r}
 sim_df_nonconst|>
-  boot_samp()|>
+  boot_sample()|>
   ggplot(aes(x=x, y=y)) +
   geom_point(alpha = .5) +
   stat_smooth(method = "lm")
 
 ```
 
+## draw a lot of samples and analyze them 
 
+```{r}
+boot_straps = 
+  tibble(strap_number = 1:100) |>
+  mutate(
+    strap_sample = map(strap_number, \(i) boot_sample(sim_df_nonconst))
+  )
+
+boot_straps |>
+  pull(strap_sample) |>
+  nth(1)|>
+  arrange(x)
+```
+
+now do the `lm` fit.
+
+```{r}
+boot_result = 
+  boot_straps |>
+  mutate(
+    models = map(strap_sample, \(df) lm(y ~ x, data= df)),
+    results = map(models, broom:: tidy)
+  ) |>
+  select(strap_number, results)|>
+  unnest(results)
+
+```
+
+try to summarize these results -- get a bootstrap SE
+
+```{r}
+boot_result |>
+  group_by(term)|>
+  summarize(
+    se = sd(estimate)
+  )
+
+sim_df_nonconst |>
+   lm(y ~ x, data = _) |>
+   broom::tidy()
+
+# compare the two dataset, the se is reversed and boot_result give us what it should, the intercept should be have smaller se than other x value. 
+# if you do everything above for the constant sample, you will get matched/same result
+```
+
+look at the distribution 
+
+```{r}
+boot_result|>
+  filter(term == "x")|>
+  ggplot(aes(x = estimate)) +
+  geom_density()
+
+#skewed, probably because we only draw 100 bootstrap sample, try 2500
+```
+
+
+can I construct a CI
+
+```{r}
+boot_result |>
+  group_by(term)|>
+  summarize(
+    ci_lower = quantile(estimate, 0.025),
+    ci_upper = quantile(estimate, 0.075)
+  )
+```
 
 
