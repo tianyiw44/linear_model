@@ -16,6 +16,7 @@ sim_df_const =
   )
 
 # dataset with nonconstant variance
+# x value closer to 0 will have smaller error than x value far from 0 due to the error equation
 sim_df_nonconst = 
   sim_df_const|>
   mutate(
@@ -65,3 +66,35 @@ sim_df_nonconst |>
     ##   <chr>          <dbl>     <dbl>     <dbl>     <dbl>
     ## 1 (Intercept)     1.93    0.105       18.5 1.88e- 48
     ## 2 x               3.11    0.0747      41.7 5.76e-114
+
+``` r
+# for nonconst, you can't trust something coming out of lm
+```
+
+## draw a bootstrap sample
+
+start with a lil function
+
+``` r
+boot_samp = function (df) {
+
+  # use sample_frac(), draw a size from the dataframe of the exact size of the dataframe
+  # Key step is replace = true,
+  sample_frac(df, replace = TRUE)
+  
+}
+```
+
+Let’s see how this work
+
+``` r
+sim_df_nonconst|>
+  boot_samp()|>
+  ggplot(aes(x=x, y=y)) +
+  geom_point(alpha = .5) +
+  stat_smooth(method = "lm")
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+<img src="bootstrapping_files/figure-gfm/unnamed-chunk-5-1.png" width="90%" />
